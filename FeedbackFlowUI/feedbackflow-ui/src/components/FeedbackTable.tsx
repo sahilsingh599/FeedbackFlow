@@ -1,4 +1,5 @@
 import { FeedbackItem } from '@/types';
+import { SentimentBadge } from './SentimentBadge';
 
 interface FeedbackTableProps {
   items: FeedbackItem[];
@@ -14,6 +15,7 @@ export function FeedbackTable({ items }: FeedbackTableProps) {
       <table className="min-w-full divide-y divide-zinc-800">
         <thead className="bg-zinc-950">
           <tr>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Sentiment</th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Source</th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Author</th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Feedback</th>
@@ -23,6 +25,9 @@ export function FeedbackTable({ items }: FeedbackTableProps) {
         <tbody className="bg-zinc-900 divide-y divide-zinc-800">
           {items.map((item) => (
             <tr key={item.id}>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <SentimentBadge sentiment={item.sentiment} />
+              </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{item.source}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-300">{item.author}</td>
               <td className="px-6 py-4 text-sm text-zinc-300 max-w-md truncate">{item.content}</td>

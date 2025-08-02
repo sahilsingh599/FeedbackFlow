@@ -1,3 +1,5 @@
+using FeedbackFlow.Api.Services;
+using FeedbackFlow.Api.Workers;
 using FeedbackFlow.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
@@ -5,44 +7,41 @@ var builder = WebApplication.CreateBuilder(args);
 
 // --- 1. Add services to the dependency injection container. ---
 
-// Add User Secrets configuration for development
-// This allows us to store secrets like connection strings outside of the project tree.
 if (builder.Environment.IsDevelopment())
 {
     builder.Configuration.AddUserSecrets<Program>();
 }
 
-// Add a PostgreSQL database context.
-// It reads the connection string from configuration (appsettings.json, then user secrets, then environment variables).
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// Add API controllers.
-builder.Services.AddControllers();
+// --- NEW: Register our AI services ---
+// Add the AnalysisService as a Singleton because loading the ML model is expensive.
+builder.Services.AddSingleton<AnalysisService>();
+// Add the background worker that will use the AnalysisService.
+builder.Services.AddHostedService<AnalysisWorker>();
 
-// Add Swagger/OpenAPI for API documentation and testing.
+
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Add CORS policy to allow our Next.js frontend to call the API.
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowWebApp",
         policy =>
         {
-            policy.WithOrigins("http://localhost:3000") // The default Next.js port
+            policy.WithOrigins("http://localhost:3000")
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });
 });
 
-
 var app = builder.Build();
 
 // --- 2. Configure the HTTP request pipeline. ---
 
-// Use Swagger in development for easy API testing.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -50,25 +49,17 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-// Apply the CORS policy.
 app.UseCors("AllowWebApp");
-
 app.UseAuthorization();
-
-// Map controller routes.
 app.MapControllers();
 
-// --- Seed the database for demonstration purposes ---
-// This is a simple way to add some data on startup for testing.
+// Seeding logic remains the same...
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     var context = services.GetRequiredService<AppDbContext>();
-    // Ensure the database is created.
     context.Database.EnsureCreated();
 
-    // Check if there is already data.
     if (!context.FeedbackItems.Any())
     {
         context.FeedbackItems.AddRange(
@@ -79,6 +70,5 @@ using (var scope = app.Services.CreateScope())
         context.SaveChanges();
     }
 }
-
 
 app.Run();
