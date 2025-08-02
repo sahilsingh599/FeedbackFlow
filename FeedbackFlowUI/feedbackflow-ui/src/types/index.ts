@@ -8,3 +8,9 @@ export interface FeedbackItem {
     topics?: string[];
     isAnalyzed: boolean;
 }
+
+// NEW TYPE for the analytics endpoint response
+export interface SentimentDistribution {
+  sentiment: string;
+  count: number;
+}
